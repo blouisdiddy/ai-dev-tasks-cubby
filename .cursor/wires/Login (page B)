@@ -1,0 +1,216 @@
+
+**Main Authentication Paths:**
+
+- Page B: Email/password login with validation and error handling 
+- Account status checks (active, suspended, email verification needed)
+- Session/JWT token generation
+
+**Forgot Password Flow:**
+
+- Email submission and validation
+- Reset email sending (with generic responses for security)
+- Password reset form with validation
+- Password update and confirmation
+
+**Registration Flow:**
+
+- Form validation and error handling
+- Duplicate email checking
+- Optional email verification requirement
+- Automatic login after successful registration
+
+**Google OAuth Integration:**
+
+- Authorization redirect flow
+- Token exchange and profile retrieval
+- Account linking for existing users
+- New account creation options
+
+Magic link authorization:
+ - Generic responses** to prevent user enumeration attacks
+- **Token expiration** after 10 minutes
+- **One-time use tokens** that are marked as used after successful login
+- **Invalid/expired link handling** with options to request new links
+- **Resend functionality** for both email and SMS methods
+
+**Session Management:**
+
+- Protected route access control
+- Session validation and expiration handling
+- Logout functionality
+
+**Security Features:**
+
+- Email verification workflows
+- Account status management
+- Token validation and expiration
+- Generic error messages for security
+
+The diagram uses different colors to distinguish between start/end points (blue), processes (purple), decisions (orange), errors (red), and success states (green). This makes it easy to follow the different paths users can take through your authentication system.
+
+
+
+```mermaid
+flowchart TD
+    A[Landing Page] --> B[Login Page]
+    
+    %% Login Page Components
+    B --> C{User Action}
+    C -->|Enter Email/Password| D[Validate Credentials]
+    C -->|Click Forgot Password| E[Forgot Password Page]
+    C -->|Click Register| F[Registration Page]
+    C -->|Click Google Login| G[Google OAuth]
+    C -->|Click Magic Link| MAGIC1[Magic Link Page]
+    
+    %% Email/Password Login Flow
+    D --> H{Credentials Valid?}
+    H -->|Yes| I{Account Status}
+    H -->|No| J[Show Error Message]
+    J --> B
+    
+    I -->|Active| K[Generate Session/JWT]
+    I -->|Needs Email Verification| L[Email Verification Required]
+    I -->|Suspended/Locked| M[Account Locked Message]
+    
+    K --> N[Redirect to Dashboard/Home]
+    M --> B
+    
+    %% Email Verification Flow
+    L --> O[Send Verification Email]
+    O --> P[Verification Pending Page]
+    P --> Q{User Clicks Email Link?}
+    Q -->|Yes| R[Verify Email Token]
+    Q -->|Resend Email| O
+    Q -->|Back to Login| B
+    
+    R --> S{Token Valid?}
+    S -->|Yes| T[Mark Email as Verified]
+    S -->|No| U[Invalid/Expired Token Page]
+    T --> K
+    U --> B
+    
+    %% Forgot Password Flow
+    E --> V[Enter Email Address]
+    V --> W[Submit Email]
+    W --> X{Email Exists?}
+    X -->|Yes| Y[Send Reset Email]
+    X -->|No| Z[Send Generic Message]
+    Y --> AA[Reset Email Sent Page]
+    Z --> AA
+    AA --> BB{User Clicks Reset Link?}
+    BB -->|Yes| CC[Reset Password Page]
+    BB -->|Back to Login| B
+    
+    CC --> DD[Enter New Password]
+    DD --> EE[Confirm New Password]
+    EE --> FF{Passwords Match & Valid?}
+    FF -->|Yes| GG[Update Password in DB]
+    FF -->|No| HH[Show Password Error]
+    HH --> DD
+    GG --> II[Password Reset Success]
+    II --> B
+    
+    %% Registration Flow
+    F --> JJ[Registration Form]
+    JJ --> KK[Fill Required Fields]
+    KK --> LL[Submit Registration]
+    LL --> MM{Validation Check}
+    MM -->|Invalid Data| NN[Show Validation Errors]
+    MM -->|Email Already Exists| OO[Email Already Registered]
+    MM -->|Valid| PP[Create User Account]
+    
+    NN --> KK
+    OO --> B
+    PP --> QQ{Email Verification Required?}
+    QQ -->|Yes| RR[Send Welcome/Verification Email]
+    QQ -->|No| SS[Auto-login User]
+    
+    RR --> L
+    SS --> K
+    
+    %% Google OAuth Flow
+    G --> TT[Redirect to Google]
+    TT --> UU{User Authorizes?}
+    UU -->|Yes| VV[Google Returns Auth Code]
+    UU -->|No| WW[Authorization Denied]
+    WW --> B
+    
+    VV --> XX[Exchange Code for Token]
+    XX --> YY[Get User Profile from Google]
+    YY --> ZZ{User Exists in System?}
+    
+    ZZ -->|Yes| AAA[Link/Update Google Account]
+    ZZ -->|No| BBB[Create New User Account]
+    
+    AAA --> K
+    BBB --> CCC{Auto-create Account?}
+    CCC -->|Yes| DDD[Create Account with Google Data]
+    CCC -->|No| EEE[Registration Form with Google Data]
+    
+    DDD --> K
+    EEE --> JJ
+    
+    %% Magic Link Flow
+    MAGIC1 --> MAGIC2[Enter Email or Phone Number]
+    MAGIC2 --> MAGIC3[Submit Contact Info]
+    MAGIC3 --> MAGIC4{Contact Method Valid & User Exists?}
+    MAGIC4 -->|No| MAGIC5[Show Generic Success Message]
+    MAGIC4 -->|Yes - Email| MAGIC6[Generate Magic Link Token]
+    MAGIC4 -->|Yes - Phone| MAGIC7[Generate Magic SMS Token]
+    
+    MAGIC5 --> MAGIC1
+    MAGIC6 --> MAGIC8[Send Magic Link Email]
+    MAGIC7 --> MAGIC9[Send Magic Link SMS]
+    
+    MAGIC8 --> MAGIC10[Magic Link Sent Page]
+    MAGIC9 --> MAGIC10
+    MAGIC10 --> MAGIC11{User Clicks Magic Link?}
+    MAGIC11 -->|Yes| MAGIC12[Validate Magic Link Token]
+    MAGIC11 -->|Resend Link| MAGIC13{Original Method}
+    MAGIC11 -->|Back to Login| B
+    
+    MAGIC13 -->|Email| MAGIC6
+    MAGIC13 -->|Phone| MAGIC7
+    
+    MAGIC12 --> MAGIC14{Token Valid & Not Expired?}
+    MAGIC14 -->|Yes| MAGIC15[Mark Token as Used]
+    MAGIC14 -->|No/Expired| MAGIC16[Invalid/Expired Link Page]
+    
+    MAGIC15 --> MAGIC17[Generate Session/JWT]
+    MAGIC16 --> MAGIC18[Request New Magic Link?]
+    MAGIC18 -->|Yes| MAGIC1
+    MAGIC18 -->|No| B
+    
+    MAGIC17 --> N
+    
+    %% Dashboard/Protected Routes
+    N --> FFF[Dashboard/Home Page]
+    FFF --> GGG{Session Valid?}
+    GGG -->|Yes| HHH[Show Protected Content]
+    GGG -->|No| III[Redirect to Login]
+    III --> B
+    
+    %% Logout Flow
+    HHH --> JJJ{User Clicks Logout?}
+    JJJ -->|Yes| KKK[Clear Session/Token]
+    KKK --> LLL[Redirect to Login/Landing]
+    LLL --> A
+    
+    %% Session Management
+    HHH --> MMM{Session Expired?}
+    MMM -->|Yes| III
+    MMM -->|No| HHH
+    
+    %% Styling
+    classDef startEnd fill:#e1f5fe
+    classDef process fill:#f3e5f5
+    classDef decision fill:#fff3e0
+    classDef error fill:#ffebee
+    classDef success fill:#e8f5e8
+    
+    class A,B,N,FFF,MAGIC1,MAGIC10 startEnd
+    class D,K,O,Y,GG,PP,XX,YY,MAGIC6,MAGIC7,MAGIC8,MAGIC9,MAGIC15,MAGIC17 process
+    class C,H,I,Q,S,X,BB,FF,MM,QQ,UU,ZZ,CCC,GGG,JJJ,MMM,MAGIC4,MAGIC11,MAGIC13,MAGIC14,MAGIC18 decision
+    class J,M,U,HH,NN,OO,WW,MAGIC5,MAGIC16 error
+    class T,II,SS,AAA,DDD success
+```

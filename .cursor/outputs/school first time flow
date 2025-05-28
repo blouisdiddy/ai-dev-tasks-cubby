@@ -1,0 +1,55 @@
+import React from 'react';
+import { useFormContext } from './SchoolFormContext';
+import { SchoolFormData } from './SchoolFormTypes';
+
+export const SchoolInfoForm: React.FC = () => {
+  const { formData, updateField, errors, handleSubmit } = useFormContext();
+
+  return (
+    <form onSubmit={handleSubmit} className="school-info-form">
+      {/* School Information Section */}
+      <section aria-labelledby="school-info-title">
+        <h2 id="school-info-title">School Information</h2>
+        
+        <div className="form-field">
+          <label htmlFor="schoolName">
+            School Name <span className="required">*</span>
+          </label>
+          <input
+            id="schoolName"
+            name="schoolName"
+            type="text"
+            value={formData.schoolName}
+            onChange={(e) => updateField('schoolName', e.target.value)}
+            required
+            aria-invalid={!!errors.schoolName}
+            aria-describedby={errors.schoolName ? 'schoolName-error' : undefined}
+          />
+          {errors.schoolName && (
+            <span id="schoolName-error" className="error-message">
+              {errors.schoolName}
+            </span>
+          )}
+        </div>
+
+        {/* Additional school fields... */}
+      </section>
+
+      {/* Campus Information Section */}
+      <section aria-labelledby="campus-info-title">
+        <h2 id="campus-info-title">Campus Information</h2>
+        
+        {/* Campus fields... */}
+      </section>
+
+      <div className="form-actions">
+        <button type="button" className="cancel-button">
+          Cancel
+        </button>
+        <button type="submit" className="next-button">
+          Next
+        </button>
+      </div>
+    </form>
+  );
+};
